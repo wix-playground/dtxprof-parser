@@ -54,15 +54,17 @@ db.serialize(async () => {
     "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = 'RequireInitialModules' ORDER BY ZTIMESTAMP LIMIT 5;"
   );
 
-  if (requreEventMore) {
-    throw new Error('RequireInitialModules must be uniq');
-  }
+  const [didMountEvent] = await toAsync(
+    db.all.bind(db),
+    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = 'DidMount' ORDER BY ZTIMESTAMP LIMIT 5;"
+  );
 
   console.log({
     firstJSEval: firstJSEval.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
     indexJs: requreEvent.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
     requireDuration: requreEvent.ZDURATION1,
     totalJS: requreEvent.ZTIMESTAMP + requreEvent.ZDURATION1 - DTXRoot.ZTIMESTAMP,
+    didMount: didMountEvent.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
   })
 
   db.close();
