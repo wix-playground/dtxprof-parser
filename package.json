@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "author": "Andrii Kogut <mail@andykog.com>",
-  "license": "ISC",
+  "license": "MIT",
   "engines" : {
     "node" : ">=8"
   },
