@@ -1,0 +1,19 @@
+{
+  "name": "dtxprof-parser",
+  "version": "1.0.0",
+  "description": "",
+  "bin": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Andrii Kogut <mail@andykog.com>",
+  "license": "ISC",
+  "engines" : {
+    "node" : ">=8"
+  },
+  "dependencies": {
+    "argparse": "^1.0.10",
+    "sqlite3": "^4.0.4"
+  }
+}
