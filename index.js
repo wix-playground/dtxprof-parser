@@ -20,6 +20,30 @@ parser.addArgument(
   }
 );
 
+parser.addArgument(
+  [ '-s', '--startEvent' ],
+  {
+    action: 'append',
+    help: 'Find first event and output it\'s start time'
+  }
+);
+
+parser.addArgument(
+  [ '-d', '--durationEvent' ],
+  {
+    action: 'append',
+    help: 'Find first event and output it\'s duration'
+  }
+);
+
+parser.addArgument(
+  [ '-o', '--output' ],
+  {
+    help: 'Output to file (json, append)'
+  }
+);
+
+
 const args = parser.parseArgs();
 const dbPath = path.join(args.profile, '_dtx_recording.sqlite');
 
@@ -44,32 +68,41 @@ db.serialize(async () => {
     throw new Error('DTXRoot must be uniq');
   }
 
-  const [firstJSEval] = await toAsync(
-    db.all.bind(db),
-    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = 'JSEvaluateScript' ORDER BY ZTIMESTAMP LIMIT 5;"
-  );
+  const result = {};
 
-  const [requreEvent, requreEventMore] = await toAsync(
-    db.all.bind(db),
-    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = 'RequireInitialModules' ORDER BY ZTIMESTAMP LIMIT 5;"
-  );
+  await Promise.all((args.startEvent || []).map(eventName => (async () => {
+    const event = await getFirst(eventName);
+    result[`${eventName}Start`] = event.ZTIMESTAMP - DTXRoot.ZTIMESTAMP;
+  })()));
 
-  const [didMountEvent] = await toAsync(
-    db.all.bind(db),
-    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = 'DidMount' ORDER BY ZTIMESTAMP LIMIT 5;"
-  );
+  await Promise.all((args.durationEvent || []).map(eventName => (async () => {
+    const event = await getFirst(eventName);
+    result[`${eventName}Duration`] = event.ZDURATION1;
+  })()));
 
-  console.log({
-    firstJSEval: firstJSEval.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
-    indexJs: requreEvent.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
-    requireDuration: requreEvent.ZDURATION1,
-    totalJS: requreEvent.ZTIMESTAMP + requreEvent.ZDURATION1 - DTXRoot.ZTIMESTAMP,
-    didMount: didMountEvent.ZTIMESTAMP - DTXRoot.ZTIMESTAMP,
-  })
+  console.log(result)
+
+  if (args.output) {
+    let content = [];
+    try {
+      content = JSON.parse(fs.readFileSync(args.output));
+    } catch(err) {
+      console.log(err)
+    }
+    content.push(result);
+    fs.writeFileSync(args.output, JSON.stringify(content, undefined, '  '));
+  }
 
   db.close();
 });
 
+async function getFirst(eventName) {
+  const [first] = await toAsync(
+    db.all.bind(db),
+    `select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = '${eventName}' ORDER BY ZTIMESTAMP LIMIT 2;`
+  );
+  return first;
+}
 
 function toAsync (fn, cmnd) {
   return new Promise((resolve, reject) => {
@@ -82,3 +115,4 @@ function toAsync (fn, cmnd) {
     })
   });
 }
+

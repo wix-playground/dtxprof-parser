@@ -6,10 +6,7 @@ Usage:
 ```
 npm i -g dtxprof-parser
 
-dtxprof-parser -p ~/Desktop/WixOneAppDev\ Dec\ 14,\ 2018\ at\ 20_17_44.dtxprof
-```
+dtxprof-parser --help
 
-Requires events to be present:
-* `JSEvaluateScript` (Provided by detox-instruments)
-* `RequireInitialModules`
-* `DidMount`
+dtxprof-parser -p ~/Desktop/MyProfile.dtxprof -s someEvent -s otherEvent -o out.json
+```
