@@ -59,20 +59,20 @@ var db = new sqlite.Database(dbPath);
 
 db.serialize(async () => {
 
-  const [DTXRoot, DTXRootMore] = await toAsync(
+  const [firstEvent] = await toAsync(
     db.all.bind(db),
-    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME1 = 'DTXRoot'"
+    "select ZTIMESTAMP, ZDURATION1 from ZSAMPLE ORDER BY ZTIMESTAMP LIMIT 1"
   );
 
-  if (DTXRootMore) {
-    throw new Error('DTXRoot must be uniq');
+  if (!firstEvent) {
+    throw new Error('No events found');
   }
 
   const result = {};
 
   await Promise.all((args.startEvent || []).map(eventName => (async () => {
     const event = await getFirst(eventName);
-    result[`${eventName}Start`] = event.ZTIMESTAMP - DTXRoot.ZTIMESTAMP;
+    result[`${eventName}Start`] = event.ZTIMESTAMP - firstEvent.ZTIMESTAMP;
   })()));
 
   await Promise.all((args.durationEvent || []).map(eventName => (async () => {
@@ -85,10 +85,8 @@ db.serialize(async () => {
   if (args.output) {
     let content = [];
     try {
-      content = JSON.parse(fs.readFileSync(args.output));
-    } catch(err) {
-      console.log(err)
-    }
+      content = Array.from(JSON.parse(fs.readFileSync(args.output)));
+    } catch(err) {}
     content.push(result);
     fs.writeFileSync(args.output, JSON.stringify(content, undefined, '  '));
   }
@@ -101,6 +99,9 @@ async function getFirst(eventName) {
     db.all.bind(db),
     `select ZTIMESTAMP, ZDURATION1 from ZSAMPLE where ZNAME = '${eventName}' ORDER BY ZTIMESTAMP LIMIT 2;`
   );
+  if (!first) {
+    throw new Error(`Event '${eventName}' not found`)
+  }
   return first;
 }
 
